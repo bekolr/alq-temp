@@ -161,4 +161,87 @@
             {{ $movimientos->links() }}
         </div>
     </div>
+
+    {{-- Tabla --}}
+    <div class="card">
+        <div class="card-body table-responsive">
+            <table class="table table-striped">
+                {{-- ... tu tabla actual ... --}}
+            </table>
+
+            {{ $movimientos->links() }}
+        </div>
+    </div>
+
+    {{-- 📊 Gráfico de evolución de movimientos --}}
+    <div class="card mt-3">
+        <div class="card-header">
+            <h3 class="card-title">Evolución de Ingresos y Egresos (mes {{ $mes }}/{{ $anio }})</h3>
+        </div>
+        <div class="card-body">
+            <canvas id="movimientosChart" height="100"></canvas>
+        </div>
+    </div>
+
+    @section('js')
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const movLabels   = @json($labels);
+        const movIngresos = @json($ingresosData);
+        const movEgresos  = @json($egresosData);
+
+        const ctxMov = document.getElementById('movimientosChart').getContext('2d');
+
+        new Chart(ctxMov, {
+            type: 'line',
+            data: {
+                labels: movLabels,
+                datasets: [
+                    {
+                        label: 'Ingresos',
+                        data: movIngresos,
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40,167,69,0.15)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Egresos',
+                        data: movEgresos,
+                        borderColor: '#dc3545',
+                        backgroundColor: 'rgba(220,53,69,0.15)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value){
+                                return '$' + new Intl.NumberFormat('es-AR').format(value);
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx){
+                                const val = ctx.raw ?? 0;
+                                return `${ctx.dataset.label}: $${new Intl.NumberFormat('es-AR', {minimumFractionDigits:2}).format(val)}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+@endsection
+
 @stop

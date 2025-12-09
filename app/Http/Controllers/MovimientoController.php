@@ -12,18 +12,16 @@ class MovimientoController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+public function index(Request $request)
 {
     $mes        = $request->input('mes', now()->format('m'));
     $anio       = $request->input('anio', now()->format('Y'));
-    $tipo       = $request->input('tipo'); // 'ingreso' / 'egreso' / null (desde el select)
+    $tipo       = $request->input('tipo'); // 'ingreso' / 'egreso' / null
     $conceptoId = $request->input('concepto_id');
     $metodo     = $request->input('metodo_pago');
 
-    // Normalizo el tipo a MAYÚSCULAS porque en la BD usás 'INGRESO' / 'EGRESO'
     $tipoFiltro = $tipo ? strtoupper($tipo) : null;
 
-    // === Query base (SIN orden) para compartir filtros ===
     $base = Movimiento::query()
         ->when($mes,        fn($q) => $q->whereMonth('fecha', (int)$mes))
         ->when($anio,       fn($q) => $q->whereYear('fecha', (int)$anio))
@@ -31,7 +29,7 @@ class MovimientoController extends Controller
         ->when($conceptoId, fn($q) => $q->where('concepto_id', $conceptoId))
         ->when($metodo,     fn($q) => $q->where('metodo_pago', $metodo));
 
-    // === Listado paginado (ACÁ sí ordenás) ===
+    // listado
     $movimientos = (clone $base)
         ->with('concepto')
         ->orderBy('fecha', 'desc')
@@ -39,7 +37,7 @@ class MovimientoController extends Controller
         ->paginate(25)
         ->withQueryString();
 
-    // === Totales (SIN ORDER BY ni LIMIT) -> evita el error ONLY_FULL_GROUP_BY ===
+    // totales
     $totales = (clone $base)
         ->selectRaw("
             SUM(CASE WHEN tipo_movimiento = 'INGRESO' THEN monto ELSE 0 END) AS total_ingresos,
@@ -49,16 +47,34 @@ class MovimientoController extends Controller
 
     $balance = ($totales->total_ingresos ?? 0) - ($totales->total_egresos ?? 0);
 
-    // Conceptos (agrupados por tipo_movimiento) para el select
+    // conceptos
     $conceptos = Concepto::orderBy('tipo_movimiento')
         ->orderBy('nombre')
         ->get()
-        ->groupBy('tipo_movimiento'); // ['INGRESO'=>[], 'EGRESO'=>[], 'MIXTO'=>[]]
+        ->groupBy('tipo_movimiento');
 
-      
+    // 📊 DATOS PARA EL GRÁFICO (por día del mes seleccionado)
+    $serie = (clone $base)
+        ->selectRaw("
+            DATE(fecha) as dia,
+            SUM(CASE WHEN tipo_movimiento = 'INGRESO' THEN monto ELSE 0 END) AS total_ingresos,
+            SUM(CASE WHEN tipo_movimiento = 'EGRESO'  THEN monto ELSE 0 END) AS total_egresos
+        ")
+        ->groupBy('dia')
+        ->orderBy('dia')
+        ->get();
+
+    $labels       = $serie->pluck('dia')->map(
+        fn($d) => \Illuminate\Support\Carbon::parse($d)->format('d/m')
+    )->values();
+
+    $ingresosData = $serie->pluck('total_ingresos')->map(fn($v) => (float)$v)->values();
+    $egresosData  = $serie->pluck('total_egresos')->map(fn($v) => (float)$v)->values();
 
     return view('movimientos.index', compact(
-        'movimientos','totales','balance','conceptos','mes','anio','tipo','conceptoId','metodo'
+        'movimientos','totales','balance','conceptos',
+        'mes','anio','tipo','conceptoId','metodo',
+        'labels','ingresosData','egresosData' // 👈 NUEVO
     ));
 }
 
