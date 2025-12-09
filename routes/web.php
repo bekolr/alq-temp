@@ -36,6 +36,12 @@ Route::middleware(['auth', 'admin'])->group(function () {
         return redirect()->route('estadias.index');
     })->name('dashboard');
 
+        // Calendario de estadías
+    Route::get('estadias/calendario', [EstadiaController::class, 'calendario'])
+        ->name('estadias.calendario');
+
+    Route::get('estadias/calendario/events', [EstadiaController::class, 'calendarioEvents'])
+        ->name('estadias.calendario.events');
     // CRUDs internos
     Route::resource('inquilinos', InquilinoController::class);
     Route::resource('departamentos', DepartamentoController::class);
@@ -49,12 +55,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('estadias/{estadia}/pagar', [EstadiaController::class, 'pagar'])
         ->name('estadias.pagar');
 
-    // Calendario de estadías
-    Route::get('estadias/calendario', [EstadiaController::class, 'calendario'])
-        ->name('estadias.calendario');
 
-    Route::get('estadias/calendario/events', [EstadiaController::class, 'calendarioEvents'])
-        ->name('estadias.calendario.events');
 });
 
 /*

@@ -1,4 +1,4 @@
-@extends('adminlte::page')
+@extends('layouts.public')
 
 @section('title', 'Check-in registrado')
 
