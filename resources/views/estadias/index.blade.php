@@ -48,6 +48,8 @@
                             @endif
                         </td>
                            <td>
+       
+
                             @if($e->estado_pago== 'pendiente')
                                 <span class="badge badge-warning">Pendiente</span>
                             @else($e->estado == 'pagada')
@@ -55,6 +57,9 @@
                             @endif
                         </td>
                         <td>
+                                                 <a href="{{ route('estadias.show', $e->id) }}" class="btn btn-primary btn-xs ">
+  <i class="fas fa-eye"></i> 
+</a>
                             <a href="{{ route('estadias.edit', $e) }}" class="btn btn-warning btn-xs">
                                 <i class="fa fa-edit"></i>
                             </a>

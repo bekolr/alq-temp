@@ -6,6 +6,7 @@ use App\Models\Estadia;
 use App\Models\Inquilino;
 use App\Models\Departamento;
 use Illuminate\Http\Request;
+use App\Models\Acompanante;
 
 
 use App\Models\Movimiento;
@@ -52,7 +53,14 @@ class EstadiaController extends Controller
 
     public function show(Estadia $estadia)
     {
-        return redirect()->route('estadias.edit', $estadia);
+        $estadia->load([
+        'departamento',
+        'inquilino',      // si existe
+        'acompanantes',
+    ]);
+
+
+    return view('estadias.show', compact('estadia'));
     }
 
     public function edit(Estadia $estadia)
